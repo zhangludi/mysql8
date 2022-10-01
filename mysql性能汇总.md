@@ -342,6 +342,123 @@
 		INNODB MYISAM CSV mermony xtraDB MRG_MYISAM archive  federated tokuDB 
 		
 		
+		
+### MYISAM 系统表,临时表(在排序,分组等操作中,当数量超过一定大小之后,由查询优化器建立临时表)
+
+	将表myd和myi 组成
+	
+**特性**
+
+	1.并发性和锁级别,读取和写入互斥,读写混合不友好
+	
+	2.表损坏修复,会造成数据丢失
+	
+		create table myisam(id int ,c1 varchar(10))
+		
+		ls -l myisam
+		
+		myisamchk -help(命令行修复,但是有可能 损坏更严重)
+		
+	3.myisam支持索引,全文索引
+	
+	4.支持数据压缩,不能写 操作,只能读
+	
+		myisampack 压缩
+		
+		myisam -b -f MyIsam.MYI
+		
+			限制:支持<5.0,默认表大小<4G,若存储大表max_rows和avg_row_length
+			
+			>5.0 支持256TB
+	
+**适用场景**
+
+	非事务型应用
+	
+	报表应用,不涉及财务的应用
+	
+	只读类型应用
+	
+	空间类型应用 GPS数据
+	
+### INNODB >5.58
+
+	支持事务引擎,适用表空间进行数据存储
+	
+#### 参数
+
+	innodb_file_per_table
+		
+		on 独立表空间 tblname.idb
+		
+		off 系统表空间 ibdataX
+	
+	set global innodb_file_per_table = off/on
+	
+	ls -lh tablename*
+	
+**系统表空间和独立表空间如何选择**
+
+	1.系统表空间无法简单的收缩文件大小 ,独立表空间可以通过optimize table命令收缩系统文件
+	
+	2.系统表空间会产生I/O瓶颈,独立表空间可以同时向多个文件刷新数据
+	
+**建议**
+
+	>5.6 默认 使用独立表空间
+
+**系统表空间转为独立表空间**
+
+	1.使用mysqldump导出所有数据库表数据
+	
+	2.停止mysql服务修改参数,并删除 INNODB相关文件
+	
+	3.重启mysql服务,重建INNODB系统表空间
+	
+	4.重新导入数据
+	
+#### INNODB存储引擎如何选择
+
+	innodb数据字典信息
+	
+	btree进行管理
+	
+	undo回滚段
+	
+	-frm mysql服务器字典
+	
+**特性**
+
+	1.innodb事务存储引擎
+	
+	2.支持ACID
+	
+	3.redo log(已提交数据) 和 undo log(未提交数据) =>单独存储到SSD
+	
+		show variable like `innodb_log_buffer_size`
+		
+		show variable like `innodb_log_files_in_group` 
+	
+	4.支持行级锁
+	
+		行级锁可以最大程度支持并发
+		
+		行级锁有存储引擎层实现
+		
+### 行级锁
+
+	管理共享资源并发访问
+	
+	锁用于实现事务的隔离性
+	
+	锁的类型:共享锁(读锁) 独占锁(写锁)
+	
+	desc tablename 查看表结构
+	
+	锁的粒度:表级锁 并发低
+	
+		lock table tbl_name write
+	
 
 
 
