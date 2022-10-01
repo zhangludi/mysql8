@@ -152,7 +152,200 @@
 
 #### SAN
 	
+	通过光纤连接服务器,设备通过块接访问服务器,将其当硬盘使用
 	
+		大量的顺序读写
+		
+		读写I/O缓存合并
+		
+		随机读写慢,不如RAID
+		
+#### NAS
+
+	使用网络连接,通过基于文件的协议如NFS或者SMB来访问
+	
+		数据库备份
+		
+**影响**
+
+		延迟吞吐量
+		
+		网络宽带对性能的影响
+		
+		网络质量对性能的影响
+		
+**建议**
+
+	采用高性能和搞宽带的网络设备和交换机
+	
+	对多个网卡进行绑定,增加可用性和带宽
+	
+	尽可能进行网络隔离
+	
+# 总结
+
+## CPU
+	
+	64位cpu一定要工作在64位 系统下
+	
+	对于高并发下cpu的数量比频率重要
+	
+	对于cpu密集型场景和复杂sql,则频率越高越好
+	
+## 内存
+
+	选择主板,使用最高频率 的内存
+	
+	内存的大小对性能很重要,所以尽可能的大
+	
+## I/O子 系统
+
+	PIC-e卡->SSD->RAID10->磁盘->SAN(网络存储)
+	
+<a id="os"> 操作系统</a>
+
+### windows
+
+### FreeBSD
+
+### Solaris
+
+### linux centos ubuntu
+
+### centos 参数优化
+
+#### centos 内核参数优化 /etc/systctl.conf
+
+	 net.core.somaxconn = 65535
+	 
+	 net.core.netdev_max_backlog = 65535
+	 
+	 net.ipv4.tcp_max_syn_backlog = 65535
+
+#### 控制tcp等待状态,加快tcp回收
+	
+		net.ipv4.tcp_fin_timeout = 10
+		
+		net.ipv4.tcp_tw_reuse = 1
+		
+		net.ipv4.tcp_tw_recycle = 1
+		
+### tcp连接和发送缓冲区默认最大值
+	
+		net.core.wmen_default = 87380
+		
+		net.core.wmen_max = 16777216
+		
+		net.core.rmen_defalut = 87380
+		
+		net.core.rmen_max =  16777216
+		
+#### 加快资源,减少失联tcp的效率,网络参数
+
+	
+		net.ipv4.tcp_keeplive_time = 120
+		
+		net.ipv4.tcp_keeplive_intlvl = 30
+		
+		net.ipv4.tcp_keeplive_probes = 3
+		
+
+### 其他
+
+#### kernel.shmmax = 4294967295
+	
+**注意**
+
+		1.这个参数应该设置的足够大,以使能在一个共享内存段下容纳整个INNODB缓冲池的大小
+		
+		2.这个值对64位,可取最大值为物理值-1byte ,建议值为大于物理内存的一半,一般取值 大于INNODB缓存值大小即可,可以取物理值 -1byte
+		
+#### vm.swappiness = 0
+
+	在mysql服务器上保留交换区还是很有必要,但是要如何控制交换区,这个参数告诉linux内核,除非虚拟内存被占满,否则不要使用交换区
+	
+	交换区swap:当操作系统没有足够的内存将一些虚拟内存写到磁盘的交换区中,这样就会发生内存交换
+	
+**不保留分区风险**
+
+	降低操作系统性能
+	
+	容易造成内存溢出崩溃或被操作系统kill掉
+	
+
+#### 增加资源限制 /etc/security/limit.conf
+
+放入末尾,重启才能生效
+
+	soft nofile 65535
+	
+	hard nofile 65535 
+	
+**参数说明**
+	
+	* 表示对所有用户有效
+	
+	soft 表示当前系统生效
+	
+	hard 系统中所能设定的最大值
+	
+	nofile 所限制的资源是打开文件的最大数目
+	
+	65535 限制的数量
+	
+#### 磁盘调度策略 /sys/block/devname(磁盘的名称)/queue/scheduler
+
+	cat  /sys/block/devname/queue/scheduler
+	
+	noop anticipatory deadline [cfg]
+	
+**参数说明**
+
+
+	noop 电梯调度策略 : 对于闪存设备/RAM嵌入系统最好的,倾向于饿死读而利于写
+	
+	deadline 对于数据库应用是最好的
+	
+	anticipatory 预料I/O调度策略 适用于写入较多的环境
+	
+**eg**
+
+	echo deadline > /sys/block/sda/queue/scheduler
+	
+### 文件系统对I/O性能
+
+	windows : FAT NTFS
+	
+	linux : ext3 ext4 xfs(性能大于其他)
+	
+		ext3/ext4 系统挂在参数 /etc/fstab
+		
+		data = writeback(最好选择)/ordered(元数据)/journal(原子日志)
+		
+		noatime nodiratime 减少写操作
+		
+		/dev/sda1/ext4 notime,nodiratime,data = writeback 1 1
+
+
+<a id="mysql"> mysql体系结构</a>
+
+		插件式存储引擎
+		
+	mysql服务层
+	
+		链接管理器->查询缓存
+		
+		链接管理器->查询分析->查询优化
+		
+##### 存储引擎层 插件式(针对表不针对库)
+
+		INNODB MYISAM CSV mermony xtraDB MRG_MYISAM archive  federated tokuDB 
+		
+		
+
+
+
+
 
 
 
