@@ -549,9 +549,217 @@
 	
 	memory数据易丢失,要求数据可再生性
 	
+### Frederated存储引擎
+
+**特点**
+
+	提供了访问远程mysql服务器表的方法
 	
+	本地不存储数据,数据全部放在远程服务器上
+	
+	本地需要保存表结构和远程服务器的连接信息
+	
+**如何使用**
 
+	默认禁止 ,需要在启动是增加frederated=1参数
+	
+	mysql://severname[:passworrd]@hostname[:port_name]/db_name/table_name
 
+	在mysql.conf增加frederated=1
+	
+**授权**
+	
+	grant select,update,insert,deleted on remote.remote_fred to fred_link@'127.0.0.1' identified by '1234567'
+	
+**远程**
+	
+	create table 'remote_fred'(
+	
+	id  int(11) auto_increment,
+	
+	c1 varchar(10) not null default '',
+	
+	c2 char(10) not null default '',
+	
+	primary key(id)
+	
+	)
+	
+**本地**
+	
+	create table 'remote_fred'(
+	
+	id  int(11) auto_increment,
+	
+	c1 varchar(10) not null default '',
+	
+	c2 char(10) not null default '',
+	
+	primary key(id)
+	
+	) engine=frederated connection="mysql://fred_link:1234567@127.0.0.1:3306/remote/remote_fred"
+	
+**场景**
+
+	偶尔统计分析及查询
+
+### 如何选择存储引擎
+
+	事务
+	
+	备份 在线备份INNODB
+	
+	崩溃恢复
+	
+	存储引擎的存储特性
+	
+<a id="mysql-param"> 数据库参数设置</a>
+
+### 服务器参数
+
+#### mysql获取参数配置信息路径
+
+**命令行参数**
+	
+		mysql_safe --datadir = /data/sql_data
+	
+**配置文件**
+	
+		mysql --help --verbose | grep -A 1 'Default options'
+		
+		/etc/my.cnf /etc/mysql/my.cnf /home/mysql/my.cnf ~/.my.cnf
+		
+**全局参数 全局配置需要重启服务器**
+
+	set global 参数名=参数值
+	
+	set @@global:参数名=参数值
+	
+**回话参数**
+
+	set [session] 参数名=参数值
+	
+	set @@session:参数名=参数值
+	
+	show variables where variable_name='wait_timeout' or variable_name='interactive_timeout'
+	
+	需要同时设置,否则取最大值
+	
+		set global wait_time = 3600
+	
+		set global interactive_timeout = 3600
+	
+### 内存相关参数
+	
+	1.确定可使用的内存上限
+	
+	2.确定mysql每个连接使用内存
+	
+	倍数级别
+		
+		sort_buffer_size 缓存区内存的排序
+		
+		join_buffer_size 连接缓冲区的大小,设置小
+		
+		read_buffer_size myisam全文扫描
+		
+		read_rnd_buffer_size 索引内存
+		
+	3.确定需要操作系统需要多少内存
+	
+	4.如何为缓存池分配内存 ,需要重启
+	
+		innnodb_buffer_pool_size
+		
+		总内存-(每个线程所需要的内存*连接数)-系统保留内存
+		
+		key_buffer_size myisam存储引擎
+		
+	select sum(index_length) from information_schema.tables where engin=engin=myisam
+	
+### I/O配置参数
+
+	决定mysql同步缓存池的数据到磁盘上,以实现数据持久化的保存,对性能影响比较大
+	
+#### INNODB
+
+	innodb_log_file_size 控制单个日志的大小  32-128M
+	
+	innodb_log_files_in_group 个数
+	
+	事务日志大小 = innodb_log_files_in_group*innodb_log_file_size
+	
+	innodb_flush_log_at_trx_commit
+	
+		1[默认]每秒进行一次log写入flush log到磁盘,默认在每次事务比较执行log写入cacahe,并flush log到磁盘
+		
+		2[建议]每次事务提交执行log数据写入到cache,每秒执行一次flush log到磁盘[进程失败,数据不丢失]
+		
+	innodb_flush_method = O_Direct 不缓存不预读
+	
+	innodb_file_per_table = 1 每个表空间
+	
+	Innodb_doublewrite = 1 避免数据损坏
+
+#### myisam 
+
+	delay_key_write
+	
+		off 每次写操作后刷新键缓冲中的脏块到磁盘
+		
+		On 只对在键表时指定了delay_key_write 选项的表使用了延迟刷新
+		
+		All 对所有myisam表使用延迟键入
+		
+#### 安全相关参数
+
+	expire_logs_days 指定自动清理bin log的天数
+	
+	max_allowed_packet 控制mysql可以接收包的连接数(32M)
+	
+	skip_name_resolve 禁用DNS查找,启用需要对ip设定访问
+	
+	sysdate_is_now sysdate()返回确定性日期
+	
+	read_only 禁用非super权限用户权限,从数据使用
+	
+	skip_slave_start 禁用slave自动恢复,从数据库使用
+	
+	sql_mode 设置mysql所使用的sql模式
+	
+		strict_trans_tables
+		
+		no_engine_subtitution
+		
+		no_zero_date 0年写入,不可以
+		
+		no_zero_in_date 
+		
+		only_full_group_by
+		
+##### 其他
+
+	sync_binlog =1 成本最高,主机,控制mysql如何向磁盘刷新binlog
+	
+	tmp__table_size 和 max_heap_table_size 控制内存表临时表大小
+	
+<a id="mysql-sql"> 数据设计结构</a>
+
+	过分的反范式化为表建立太多的列
+	
+	太多的范式化造成太多标的关联,最多关联61个表
+	
+	在OLP环境中使用不恰的分区表
+	
+	使用外键保证数据的完整性
+	
+	
+# 顺序
+
+mysql设计结构和sql语句 
+->存储引擎选择和参数配置
+->系统选择及优化
+->硬件升级
 
 
 
