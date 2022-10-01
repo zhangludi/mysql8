@@ -459,6 +459,112 @@
 	
 		lock table tbl_name write
 	
+	阻塞和死锁
+	
+		阻塞:不同锁兼容关系,慢查询
+		
+		死锁:两个或者两个以上事务占用相互等待资源,系统 自动处理
+		
+	INNODB 状态检查
+	
+		show engine innodb status 
+		
+### CSV存储引擎 文件系统存储特点
+
+	以文本形式存储在文件中
+	
+	.csv文件存储表内容
+	
+	.csm文件存储表元数据,例如表的状态和表数量
+	
+	.frm文件存储表结构
+	
+**特点**
+
+	以csv文件进行表存储
+	
+	所有列都必须不能为null
+	
+	不支持索引
+	
+	不适合大表,不适合在线处理
+	
+	可以对数据文件进行直接编辑
+	
+	more mycsv.csv
+	
+	flush tables 刷新文件
+	
+### Archive存储引擎
+
+**特点**
+
+	以zlib对表进行压缩,磁盘I/O更少
+	
+	数据存储在ARZ为后缀的文件
+	
+	只支持insert和select操作
+	
+	只支持在自增ID列上增加索引
+	
+**使用场景**
+
+	日志和数据采集类应用
+	
+### memory存储引擎
+
+	HEAP 存储引擎,数据保存在内存中
+	
+**特点**
+
+	Hash(值查找)和btree(范围查找)索引
+	
+	所有的字段都为固定长度varcahr(10)=char(10)
+	
+	不能使用blog和txt
+	
+	表级锁
+	
+	最大大小由 max_heap_table_size 参数决定
+	
+	show index from tbl-name 查看索引
+	
+	show create table tbl-name\G
+	
+**容易混淆的概念**
+
+	临时表:
+	
+	1.系统临时使用临时表,超过限制使用myism临时表,未超过限制使用memory
+	
+	2.create temporary table 建立索引
+	
+**场景**
+
+	用于查找或者是影射 表,如邮编和地区的对应表
+	
+	用于保存数据分析中产生的中间表
+	
+	用于缓存同期性聚合数据的结果表
+	
+	memory数据易丢失,要求数据可再生性
+	
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
