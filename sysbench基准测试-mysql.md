@@ -30,8 +30,8 @@ https://blog.csdn.net/Wanguyunxiaodaniu/article/details/105903435
 ### 2）测试线程：
 
 	sysbench  --test=threads --num-threads=500 --thread-yields=100 --thread-locks=4 run，结果如下图：
-
-
+	
+	
 
 
 ### 3）测试IO：
@@ -93,3 +93,48 @@ https://blog.csdn.net/Wanguyunxiaodaniu/article/details/105903435
 
 ### 5)测试mutex：
 	sysbench –test=mutex –num-threads=100 –mutex-num=1000 –mutex-locks=100000 –mutex-loops=10000 run
+	
+## 分析的sh  analzy.sh
+	#!/bin/bash
+	awk '
+	   BEGIN {
+		 printf "#ts date time load QPS";
+		 fmt=" %.2f";
+	   }
+	   /^TS/ {
+	   ts = substr($2,1,index($2,".")-1);
+	   load = NF -2;
+	   diff = ts - prev_ts;
+	   printf "\n%s %s %s %s",ts,$3,$4,substr($load,1,length($load)-1);
+	   prev_ts=ts;
+	   }
+	   /Queries/{
+	   printf fmt,($2-Queries)/diff;
+	   Queries=$2
+	   }
+	   ' "$@"
+	   
+## get_test_info.sh
+
+	#!/bin/bash
+	INTERVAL=5   #收集时间
+	PREFIX=/home/imooc/benchmarks/$INTERVAL-sec-status  #把收集的信息记录在哪里
+	RUNFILE=/home/imooc/benchmarks/running   #记录运行标识,删除这个文件停止运行
+	echo "1" > $RUNFILE  #生成运行标识的文件
+	MYSQL=/usr/local/mysql/bin/mysql   #mysql 命令所在的位置
+	$MYSQL -e "show global variables" >> mysql-variables  #记录mysql 的设置信息
+	while test -e $RUNFILE; do  #循环 只要标示文件存在,循环就会一直继续
+		file=$(date +%F_%I)     # 9-11 定义了脚本的运行时间,文件名,每隔多长时间运行
+		sleep=$(date +%s.%N | awk '{print 5 - ($1 % 5)}')
+		sleep $sleep
+		ts="$(date +"TS %s.%N %F %T")"
+		loadavg="$(uptime)"   # 收集系统的负载情况
+		echo "$ts $loadavg" >> $PREFIX-${file}-status   # 收集系统的负载情况 记录到文件中
+		$MYSQL -e "show global status" >> $PREFIX-${file}-status &    #收集了mysql全局的状态信息
+		echo "$ts $loadavg" >> $PREFIX-${file}-innodbstatus  #收集了mysql全局的状态信息,记录到文件中
+		$MYSQL -e "show engine innodb status" >> $PREFIX-${file}-innodbstatus &   #收集了innnodb的状态信息
+		echo "$ts $loadavg" >> $PREFIX-${file}-processlist
+		$MYSQL -e "show full processlist\G" >> $PREFIX-${file}-processlist &   #收集当前连接线程的情况
+		echo $ts
+	done
+	echo Exiting because $RUNFILE does not exists
