@@ -1,0 +1,35 @@
+一、关闭MySQL
+
+[root@localhost /]# service mysqld stop 
+Redirecting to /bin/systemctl stop mysqld.service 
+二、查看当前安装mysql情况，查找以前是否装有mysql
+
+[root@localhost /]# rpm -qa|grep -i mysql 
+mysql-community-client-8.0.13-1.el7.x86_64 
+mysql-community-libs-8.0.13-1.el7.x86_64 
+mysql-community-common-8.0.13-1.el7.x86_64 
+mysql-community-server-8.0.13-1.el7.x86_64 
+三、执行命令删除安装的MySQL
+
+[root@localhost /]# rpm -ev mysql-community-client-8.0.13-1.el7.x86_64 --nodeps 
+[root@localhost /]# rpm -ev mysql-community-libs-8.0.13-1.el7.x86_64 --nodeps 
+[root@localhost /]# rpm -ev mysql-community-common-8.0.13-1.el7.x86_64 --nodeps 
+[root@localhost /]# rpm -ev mysql-community-server-8.0.13-1.el7.x86_64 --nodeps 
+四、查看是否删除成功。
+
+[root@localhost ~]# rpm -qa | grep -i mysql 
+五：查看之前安装的MySQL的目录并删除
+
+[root@localhost /]# find / -name mysql
+/var/lib/mysql
+/var/lib/mysql/mysql
+/usr/lib64/mysql
+/usr/share/mysql
+[root@localhost /]# rm -rf /var/lib/mysql
+[root@localhost /]# rm -rf /var/lib/mysql/mysql
+[root@localhost /]# rm -rf /usr/lib64/mysql
+[root@localhost /]# rm -rf /usr/share/mysql
+六：删除my.cnf
+
+卸载后/etc/my.cnf不会删除，需要进行手工删除 
+[root@localhost /]# rm -rf /etc/my.cnf 
