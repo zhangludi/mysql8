@@ -44,3 +44,6 @@ update user set host = '%' where user ='root';
 远程链接也直接就解决了
 
 FLUSH PRIVILEGES;
+
+
+GRANT ALL PRIVILEGES ON *.* TO root@'%' IDENTIFIED BY 'root' WITH GRANT OPTION;
